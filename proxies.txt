@@ -1,0 +1,4 @@
+# Add your proxies here, one per line
+# Format: http://username:password@proxy-address:port or http://proxy-address:port
+http://your-proxy1-address:port
+http://your-proxy2-address:port 

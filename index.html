@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waqf Scraper Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #eef2f3, #8e9eab);
+      color: #222;
+      padding: 1.5rem;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 1.2rem;
+      color: #2c3e50;
+    }
+    label {
+      font-weight: 600;
+      margin-top: 1.2rem;
+      display: block;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 0.4rem;
+    }
+    textarea {
+      height: 160px;
+      resize: vertical;
+    }
+    .button-container {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 1.5rem;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #status {
+      margin-top: 2rem;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      height: 250px;
+      overflow-y: auto;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .folder-picker {
+      margin-top: 0.4rem;
+    }
+    .folder-picker input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: white;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1> Scraper Tool</h1>
+
+  <form id="scraperForm">
+    <label for="loginUrl">Login URL:</label>
+    <input type="text" id="loginUrl" placeholder="Enter the login URL..." required>
+
+    
+    <label for="tableUrls">Table URLs (one per line):</label>
+    <textarea id="tableUrls" placeholder="Paste Waqf Table URLs here..." required></textarea>
+    <label for="folderName">State and  District Name:</label>
+    <input type="text" id="folderName" placeholder="Enter folder name to save PDFs..." required>
+
+    <label for="startIndex">Start From Index (Optional):</label>
+    <input type="number" id="startIndex" placeholder="Enter row index to resume from..." style="width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; margin-top: 0.4rem;">
+
+    <div class="button-container">
+      <button type="submit">Start Scraping</button>
+      <button type="button" id="abortButton" style="background-color: #dc3545;" disabled>🛑 Abort</button>
+    </div>
+  </form>
+
+  <div id="status">Waiting to start...</div>
+
+  <script>
+    let abortController = null;
+    const form = document.getElementById('scraperForm');
+    const status = document.getElementById('status');
+    const abortButton = document.getElementById('abortButton');
+    let eventSource = null;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const loginUrl = document.getElementById('loginUrl').value;
+        const folderName = document.getElementById('folderName').value;
+        const startIndex = document.getElementById('startIndex').value;
+        const tableUrls = document.getElementById('tableUrls').value
+            .split('\n')
+            .map(url => url.trim())
+            .filter(url => url);
+
+        if (!loginUrl || tableUrls.length === 0 || !folderName) {
+            status.innerHTML = '<span class="error">Please fill in all fields</span>';
+            return;
+        }
+
+        // Clear previous status and enable abort button
+        status.textContent = 'Starting...';
+        abortButton.disabled = false;
+        
+        // Setup SSE for real-time logs
+        eventSource = new EventSource('/stream');
+        eventSource.onmessage = (event) => {
+            status.textContent += '\n' + event.data;
+            status.scrollTop = status.scrollHeight;
+        };
+
+        try {
+            abortController = new AbortController();
+            const response = await fetch('/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    loginUrl, 
+                    urls: tableUrls,
+                    folderName,
+                    startIndex: startIndex ? parseInt(startIndex) : undefined
+                }),
+                signal: abortController.signal
+            });
+
+            const data = await response.json();
+            status.textContent += '\n' + data.message;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                status.textContent += '\nOperation aborted by user.';
+            } else {
+                status.innerHTML += '\n<span class="error">Error: ' + error.message + '</span>';
+            }
+        } finally {
+            abortButton.disabled = true;
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            abortController = null;
+        }
+    });
+
+    abortButton.addEventListener('click', async () => {
+      if (abortController) {
+        abortController.abort();
+        status.textContent += '\nAborting operation...';
+        
+        // Call the abort endpoint to close the browser
+        try {
+          const response = await fetch('/abort', {
+            method: 'POST'
+          });
+          const data = await response.json();
+          status.textContent += '\n' + data.message;
+        } catch (error) {
+          status.innerHTML += '\n<span class="error">Error during abort: ' + error.message + '</span>';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
