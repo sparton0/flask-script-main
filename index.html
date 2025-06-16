@@ -3,125 +3,315 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Waqf Scraper Tool</title>
+  <title>Document Scraper</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-bg: #fff;
+      --primary-text: #222;
+      --card-bg: #fff;
+      --input-bg: #f8fafc;
+      --input-border: #d1d5db;
+      --input-focus: #7c3aed;
+      --button-gradient: linear-gradient(90deg, #7c3aed 0%, #3b82f6 100%);
+      --button-hover-gradient: linear-gradient(90deg, #3b82f6 0%, #7c3aed 100%);
+      --abort-btn-bg: #fff;
+      --abort-btn-text: #7c3aed;
+      --abort-btn-border: #7c3aed;
+      --log-bg: #111;
+      --log-text: #fff;
+      --checkbox-accent: #7c3aed;
+      --error: #ef4444;
+    }
+    body.dark {
+      --primary-bg: #181926;
+      --primary-text: #f3f4f6;
+      --card-bg: #23243a;
+      --input-bg: #23243a;
+      --input-border: #44446a;
+      --input-focus: #a5b4fc;
+      --button-gradient: linear-gradient(90deg, #6366f1 0%, #7c3aed 100%);
+      --button-hover-gradient: linear-gradient(90deg, #7c3aed 0%, #6366f1 100%);
+      --abort-btn-bg: #23243a;
+      --abort-btn-text: #a5b4fc;
+      --abort-btn-border: #a5b4fc;
+      --log-bg: #181926;
+      --log-text: #f3f4f6;
+      --checkbox-accent: #a5b4fc;
+      --error: #f87171;
+    }
     * {
       box-sizing: border-box;
     }
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to right, #eef2f3, #8e9eab);
-      color: #222;
-      padding: 1.5rem;
-      max-width: 900px;
-      margin: auto;
+      background: var(--primary-bg);
+      color: var(--primary-text);
+      padding: 2.5rem 1.5rem;
+      max-width: 800px;
+      margin: 0 auto;
+      transition: background 0.3s, color 0.3s;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      box-shadow: 0 4px 24px #0002, 0 1.5px 4px #7c3aed11;
+      padding: 2.2rem 2.5rem 2.2rem 2.5rem;
+      margin: 0 auto;
+      max-width: 720px;
+      position: relative;
+      transition: background 0.3s;
+    }
+    .dark-toggle {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.7rem;
+      color: var(--primary-text);
+      transition: color 0.3s;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      width: 2.2rem;
+      height: 2.2rem;
+    }
+    .dark-toggle svg {
+      width: 1.7rem;
+      height: 1.7rem;
+      display: block;
+      stroke: var(--primary-text);
+      fill: none;
+      stroke-width: 2;
+      transition: stroke 0.3s;
     }
     h1 {
       font-size: 2.2rem;
-      margin-bottom: 1.2rem;
-      color: #2c3e50;
+      margin-bottom: 2.2rem;
+      color: var(--primary-text);
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: -1px;
+      transition: color 0.3s;
     }
     label {
       font-weight: 600;
       margin-top: 1.2rem;
       display: block;
+      margin-bottom: 0.3rem;
     }
-    input[type="text"], textarea {
+    input[type="text"], input[type="number"], textarea {
       width: 100%;
-      padding: 12px;
+      padding: 13px 14px;
       font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin-top: 0.4rem;
+      border: 1.5px solid var(--input-border);
+      border-radius: 8px;
+      margin-bottom: 1.1rem;
+      background: var(--input-bg);
+      color: var(--primary-text);
+      transition: border 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+      outline: none;
+      display: block;
+      margin-left: 0;
+      margin-right: 0;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+      border: 1.5px solid var(--input-focus);
+      box-shadow: 0 0 0 2px #a5b4fc44;
+      background: var(--primary-bg);
+      color: var(--primary-text);
     }
     textarea {
-      height: 160px;
+      height: 100px;
       resize: vertical;
     }
-    .button-container {
+    .input-row {
       display: flex;
       gap: 1rem;
-      flex-wrap: wrap;
     }
-    button {
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
+    .input-row > div {
+      flex: 1;
+    }
+    .input-row input[type="number"] {
+      width: 100%;
+    }
+    .button-container {
       margin-top: 1.5rem;
-      transition: background 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
     }
-    button:hover {
-      background-color: #0056b3;
+    button[type="submit"] {
+      background: var(--button-gradient);
+      color: #fff;
+      border: none;
+      padding: 14px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 600;
+      transition: background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px #7c3aed22;
+      width: 100%;
+    }
+    button[type="submit"]:hover {
+      background: var(--button-hover-gradient);
+    }
+    #abortButton {
+      background: var(--abort-btn-bg);
+      color: var(--abort-btn-text);
+      border: 2px solid var(--abort-btn-border);
+      padding: 12px 0;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      width: 100%;
+    }
+    #abortButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #abortButton:not(:disabled):hover {
+      background: var(--abort-btn-border);
+      color: #fff;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      margin-top: 1.5rem;
+      margin-bottom: 0.7rem;
+      gap: 0.5rem;
+    }
+    .checkbox-row input[type="checkbox"] {
+      accent-color: var(--checkbox-accent);
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1.5px solid var(--checkbox-accent);
+      margin-right: 0.5rem;
+    }
+    .checkbox-row label {
+      margin: 0;
+      font-weight: 500;
+      color: var(--primary-text);
+      transition: color 0.3s;
     }
     #status {
-      margin-top: 2rem;
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 1rem;
-      border-radius: 6px;
-      white-space: pre-wrap;
-      height: 250px;
+      white-space: pre;
+      font-family: monospace;
+      margin-top: 1.2rem;
+      background: var(--log-bg);
+      color: var(--log-text);
+      border-radius: 8px;
+      padding: 1.1rem 1rem;
+      font-size: 1rem;
+      min-height: 60px;
+      height: 170px;
+      max-height: 200px;
       overflow-y: auto;
+      font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+      box-shadow: 0 2px 8px #0001;
+      border: none;
+      transition: background 0.3s, color 0.3s;
     }
     .error {
-      color: red;
+      color: var(--error);
       font-weight: bold;
     }
-    .folder-picker {
-      margin-top: 0.4rem;
-    }
-    .folder-picker input[type="file"] {
-      width: 100%;
-      padding: 12px;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background-color: white;
-    }
-    @media (max-width: 600px) {
+    .log-error { color: #ef4444; font-weight: bold; }
+    .log-success { color: #22c55e; font-weight: bold; }
+    .log-warning { color: #eab308; font-weight: bold; }
+    .log-info { color: #3b82f6; }
+    @media (max-width: 900px) {
       body {
         padding: 1rem;
+        max-width: 100vw;
+      }
+      .card {
+        padding: 1.2rem 0.5rem 1.2rem 0.5rem;
+        max-width: 99vw;
       }
       h1 {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
       }
-      button {
-        width: 100%;
+      button[type="submit"] {
+        font-size: 1rem;
       }
     }
   </style>
 </head>
 <body>
-
-  <h1> Scraper Tool</h1>
-
+  <div class="card">
+    <button class="dark-toggle" id="darkToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <span id="darkIcon">
+        <!-- Sun icon (default, for light mode) -->
+        <svg id="iconSun" viewBox="0 0 24 24" style="display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="5"/><g><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></g></svg>
+        <!-- Moon icon (for dark mode) -->
+        <svg id="iconMoon" viewBox="0 0 24 24" style="display:none;" xmlns="http://www.w3.org/2000/svg"><path d="M21 12.79A9 9 0 0 1 12.21 3a7 7 0 1 0 8.79 9.79z"/></svg>
+      </span>
+    </button>
+    <h1>Document Scraper</h1>
   <form id="scraperForm">
-    <label for="loginUrl">Login URL:</label>
-    <input type="text" id="loginUrl" placeholder="Enter the login URL..." required>
-
+      <label for="loginUrl">Login URL</label>
+      <input type="text" id="loginUrl" placeholder="https://..." required>
     
-    <label for="tableUrls">Table URLs (one per line):</label>
-    <textarea id="tableUrls" placeholder="Paste Waqf Table URLs here..." required></textarea>
-    <label for="folderName">State and  District Name:</label>
-    <input type="text" id="folderName" placeholder="Enter folder name to save PDFs..." required>
+      <label for="tableUrls">Table URLs <span style="font-weight:400;font-size:0.95em;">(one per line)</span></label>
+      <textarea id="tableUrls" placeholder="Paste table URLs here, one per line" required></textarea>
 
-    <label for="startIndex">Start From Index (Optional):</label>
-    <input type="number" id="startIndex" placeholder="Enter row index to resume from..." style="width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; margin-top: 0.4rem;">
+      <label for="folderName">District Name</label>
+      <input type="text" id="folderName" placeholder="e.g. Mumbai" required>
+
+      <div class="input-row">
+        <div>
+          <label for="startIndex">Start Index <span style="font-weight:400;font-size:0.95em;">(optional)</span></label>
+          <input type="number" id="startIndex" placeholder="e.g. 1">
+        </div>
+        <div>
+          <label for="lastIndex">Last Index <span style="font-weight:400;font-size:0.95em;">(optional)</span></label>
+          <input type="number" id="lastIndex" placeholder="e.g. 100">
+        </div>
+      </div>
 
     <div class="button-container">
       <button type="submit">Start Scraping</button>
-      <button type="button" id="abortButton" style="background-color: #dc3545;" disabled>🛑 Abort</button>
+        <button type="button" id="abortButton" disabled>Abort</button>
     </div>
   </form>
 
-  <div id="status">Waiting to start...</div>
+    <div id="status">No logs yet. Start scraping to see real-time updates here.</div>
+  </div>
 
   <script>
+    // Dark mode toggle logic
+    const darkToggle = document.getElementById('darkToggle');
+    const iconSun = document.getElementById('iconSun');
+    const iconMoon = document.getElementById('iconMoon');
+    function setDarkMode(on) {
+      if (on) {
+        document.body.classList.add('dark');
+        iconSun.style.display = 'none';
+        iconMoon.style.display = 'block';
+        localStorage.setItem('darkMode', 'on');
+      } else {
+        document.body.classList.remove('dark');
+        iconSun.style.display = 'block';
+        iconMoon.style.display = 'none';
+        localStorage.setItem('darkMode', 'off');
+      }
+    }
+    // On load, set mode from localStorage
+    setDarkMode(localStorage.getItem('darkMode') === 'on');
+    darkToggle.onclick = () => {
+      setDarkMode(!document.body.classList.contains('dark'));
+    };
+
+    // Existing JS for form
     let abortController = null;
     const form = document.getElementById('scraperForm');
     const status = document.getElementById('status');
@@ -134,6 +324,7 @@
         const loginUrl = document.getElementById('loginUrl').value;
         const folderName = document.getElementById('folderName').value;
         const startIndex = document.getElementById('startIndex').value;
+        const lastIndex = document.getElementById('lastIndex').value;
         const tableUrls = document.getElementById('tableUrls').value
             .split('\n')
             .map(url => url.trim())
@@ -148,10 +339,26 @@
         status.textContent = 'Starting...';
         abortButton.disabled = false;
         
-        // Setup SSE for real-time logs
+        // Setup SSE for real-time logs (always enabled)
         eventSource = new EventSource('/stream');
         eventSource.onmessage = (event) => {
-            status.textContent += '\n' + event.data;
+            let msg = event.data;
+            let cls = '';
+            if (msg.startsWith('[ERROR]')) {
+                cls = 'log-error';
+                msg = msg.replace(/^\[ERROR\]\s*/, '');
+            } else if (msg.startsWith('[WARNING]')) {
+                cls = 'log-warning';
+                msg = msg.replace(/^\[WARNING\]\s*/, '');
+            }
+            
+            // Add the message with proper indentation
+            const span = cls ? `<span class='${cls}'>${msg}</span>` : msg;
+            if (status.innerHTML === 'No logs yet. Start scraping to see real-time updates here.') {
+                status.innerHTML = span;
+            } else {
+                status.innerHTML += '\n' + span;
+            }
             status.scrollTop = status.scrollHeight;
         };
 
@@ -166,7 +373,8 @@
                     loginUrl, 
                     urls: tableUrls,
                     folderName,
-                    startIndex: startIndex ? parseInt(startIndex) : undefined
+                    startIndex: startIndex ? parseInt(startIndex) : undefined,
+                    lastIndex: lastIndex ? parseInt(lastIndex) : undefined
                 }),
                 signal: abortController.signal
             });
