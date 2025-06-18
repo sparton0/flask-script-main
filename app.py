@@ -6,13 +6,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import base64, os, time, queue
 from threading import Event
-import json
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.os_manager import ChromeType
-import sys
-import platform
-import shutil
 from selenium.common.exceptions import TimeoutException
 import pytz
 from datetime import datetime, timedelta
