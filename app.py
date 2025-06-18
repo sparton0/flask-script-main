@@ -46,8 +46,9 @@ def initialize_driver(save_dir):
         
         # Check if we're running on Render (Linux environment)
         if os.path.exists('/opt/render'):
-            # Use system Chrome installation
-            driver = webdriver.Chrome(options=options)
+            # Use system Chrome and ChromeDriver installation
+            service = Service(executable_path='/usr/local/bin/chromedriver')
+            driver = webdriver.Chrome(service=service, options=options)
         else:
             # Local Windows environment
             driver_path = ChromeDriverManager().install()
