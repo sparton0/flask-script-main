@@ -42,42 +42,40 @@ def get_chrome_options(save_location):
 
 def initialize_driver(save_dir):
     try:
-        # Get ChromeDriver path using the default installation
-        driver_path = ChromeDriverManager().install()
-        
-        # Ensure we're using the correct chromedriver.exe file
-        driver_dir = os.path.dirname(driver_path)
-        if not driver_path.endswith('chromedriver.exe'):
-            # Look for chromedriver.exe in the directory
-            possible_paths = [
-                os.path.join(driver_dir, 'chromedriver.exe'),
-                os.path.join(driver_dir, 'chromedriver-win32', 'chromedriver.exe'),
-                os.path.join(driver_dir, 'chromedriver-win64', 'chromedriver.exe')
-            ]
-            
-            for path in possible_paths:
-                if os.path.exists(path):
-                    driver_path = path
-                    break
-            else:
-                raise Exception(f"Could not find chromedriver.exe in {driver_dir}")
-        
-        log_message(f"Using ChromeDriver at: {driver_path}", level='INFO')
-        
-        # Create service with explicit path
-        service = Service(executable_path=driver_path)
-        
-        # Initialize Chrome with options
         options = get_chrome_options(save_dir)
-        driver = webdriver.Chrome(service=service, options=options)
+        
+        # Check if we're running on Render (Linux environment)
+        if os.path.exists('/opt/render'):
+            # Use system Chrome installation
+            driver = webdriver.Chrome(options=options)
+        else:
+            # Local Windows environment
+            driver_path = ChromeDriverManager().install()
+            
+            # Ensure we're using the correct chromedriver.exe file
+            driver_dir = os.path.dirname(driver_path)
+            if not driver_path.endswith('chromedriver.exe'):
+                # Look for chromedriver.exe in the directory
+                possible_paths = [
+                    os.path.join(driver_dir, 'chromedriver.exe'),
+                    os.path.join(driver_dir, 'chromedriver-win32', 'chromedriver.exe'),
+                    os.path.join(driver_dir, 'chromedriver-win64', 'chromedriver.exe')
+                ]
+                
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        driver_path = path
+                        break
+                else:
+                    raise Exception(f"Could not find chromedriver.exe in {driver_dir}")
+            
+            log_message(f"Using ChromeDriver at: {driver_path}", level='INFO')
+            service = Service(executable_path=driver_path)
+            driver = webdriver.Chrome(service=service, options=options)
+            
         return driver
     except Exception as e:
         log_message(f"Error initializing ChromeDriver: {str(e)}", level='ERROR')
-        if "not a valid Win32 application" in str(e):
-            log_message("This error typically occurs when ChromeDriver is not compatible with your system.", level='WARNING')
-            log_message("Please ensure you have the latest version of Chrome browser installed.", level='WARNING')
-            log_message("You may need to manually download ChromeDriver from: https://chromedriver.chromium.org/downloads", level='WARNING')
-            log_message("After downloading, extract chromedriver.exe and place it in: " + driver_dir, level='WARNING')
         raise
 
 @app.route('/scrape', methods=['POST'])
