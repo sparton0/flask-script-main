@@ -145,6 +145,13 @@
       flex-direction: column;
       gap: 0.7rem;
     }
+    .button-row {
+      display: flex;
+      gap: 0.7rem;
+    }
+    .button-row button {
+      flex: 1;
+    }
     button[type="submit"] {
       background: var(--button-gradient);
       color: #fff;
@@ -178,6 +185,26 @@
       cursor: not-allowed;
     }
     #abortButton:not(:disabled):hover {
+      background: var(--abort-btn-border);
+      color: #fff;
+    }
+    #createZipButton {
+      background: var(--abort-btn-bg);
+      color: var(--abort-btn-text);
+      border: 2px solid var(--abort-btn-border);
+      padding: 12px 0;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      width: 100%;
+    }
+    #createZipButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #createZipButton:not(:disabled):hover {
       background: var(--abort-btn-border);
       color: #fff;
     }
@@ -228,6 +255,21 @@
     .log-success { color: #22c55e; font-weight: bold; }
     .log-warning { color: #eab308; font-weight: bold; }
     .log-info { color: #3b82f6; }
+    #submitDataButton {
+      background: var(--button-gradient);
+      color: #fff;
+      border: none;
+      padding: 12px 0;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    #submitDataButton:hover {
+      background: var(--button-hover-gradient);
+    }
     @media (max-width: 900px) {
       body {
         padding: 1rem;
@@ -280,7 +322,11 @@
 
     <div class="button-container">
       <button type="submit">Start Scraping</button>
-        <button type="button" id="abortButton" disabled>Abort</button>
+      <button type="button" id="abortButton" disabled>Abort</button>
+      <div class="button-row">
+        <button type="button" id="createZipButton" disabled>Create ZIP File</button>
+        <button type="button" id="submitDataButton" onclick="window.open('https://forms.gle/N9J2ci1xDjNTk3ZWA', '_blank')">Submit Data</button>
+      </div>
     </div>
   </form>
 
@@ -316,6 +362,7 @@
     const form = document.getElementById('scraperForm');
     const status = document.getElementById('status');
     const abortButton = document.getElementById('abortButton');
+    const createZipButton = document.getElementById('createZipButton');
     let eventSource = null;
 
     form.addEventListener('submit', async (e) => {
@@ -394,6 +441,8 @@
                 eventSource = null;
             }
             abortController = null;
+            // Enable create zip button after scraping is complete
+            createZipButton.disabled = false;
         }
     });
 
@@ -413,6 +462,35 @@
           status.innerHTML += '\n<span class="error">Error during abort: ' + error.message + '</span>';
         }
       }
+    });
+
+    // Create ZIP button click handler
+    createZipButton.addEventListener('click', async () => {
+        const folderName = document.getElementById('folderName').value;
+        if (!folderName) {
+            status.innerHTML += '\n<span class="error">Please enter a District Name first.</span>';
+            return;
+        }
+
+        try {
+            status.textContent += '\nCreating ZIP file...';
+            const response = await fetch('/create-zip', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ folderName })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create ZIP file');
+            }
+
+            const result = await response.json();
+            status.textContent += '\n' + result.message;
+        } catch (error) {
+            status.innerHTML += '\n<span class="error">Error creating ZIP: ' + error.message + '</span>';
+        }
     });
   </script>
 </body>

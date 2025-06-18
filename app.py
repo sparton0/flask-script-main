@@ -1,18 +1,14 @@
-from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
+from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context, send_file
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import base64, os, time, queue
+import base64, os, time, queue, shutil
 from threading import Event
-import json
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.os_manager import ChromeType
-import sys
-import platform
-import shutil
+
 from selenium.common.exceptions import TimeoutException
 import pytz
 from datetime import datetime, timedelta
@@ -284,6 +280,65 @@ def abort_scraping():
         except Exception as e:
             log_message(f"Error closing browser: {str(e)}", level='ERROR')
     return jsonify({"message": "Operation aborted"}), 200
+
+@app.route('/create-zip', methods=['POST'])
+def create_zip():
+    try:
+        data = request.get_json()
+        folder_name = data.get('folderName')
+        if not folder_name:
+            log_message("No folder name provided", level='ERROR')
+            return jsonify({"message": "Folder name is required"}), 400
+
+        # Path to the folder we want to zip
+        folder_path = os.path.join(SAVE_DIR, folder_name)
+        log_message(f"Checking folder path: {folder_path}", level='INFO')
+        
+        if not os.path.exists(folder_path):
+            log_message(f"Folder not found: {folder_path}", level='ERROR')
+            return jsonify({"message": "Folder not found"}), 404
+
+        if not os.path.isdir(folder_path):
+            log_message(f"Path exists but is not a directory: {folder_path}", level='ERROR')
+            return jsonify({"message": "Invalid folder path"}), 400
+
+        # List contents of the folder
+        files = os.listdir(folder_path)
+        log_message(f"Found {len(files)} files in the folder", level='INFO')
+
+        # Create a zip file in the same directory
+        zip_path = os.path.join(SAVE_DIR, f"{folder_name}.zip")
+        log_message(f"Creating zip at: {zip_path}", level='INFO')
+        
+        # Remove existing zip file if it exists
+        if os.path.exists(zip_path):
+            try:
+                os.remove(zip_path)
+                log_message("Removed existing zip file", level='INFO')
+            except Exception as e:
+                log_message(f"Error removing existing zip: {str(e)}", level='ERROR')
+                return jsonify({"message": f"Error removing existing zip file: {str(e)}"}), 500
+            
+        # Create the zip file
+        try:
+            shutil.make_archive(os.path.join(SAVE_DIR, folder_name), 'zip', folder_path)
+            log_message("ZIP file created successfully", level='SUCCESS')
+        except Exception as e:
+            log_message(f"Error during zip creation: {str(e)}", level='ERROR')
+            return jsonify({"message": f"Error creating ZIP file: {str(e)}"}), 500
+        
+        # Verify the zip was created
+        if os.path.exists(zip_path):
+            return jsonify({
+                "message": f"ZIP file created successfully at pdf_output/{folder_name}.zip"
+            })
+        else:
+            log_message("ZIP file was not created", level='ERROR')
+            return jsonify({"message": "Failed to create ZIP file: File not found after creation"}), 500
+
+    except Exception as e:
+        log_message(f"Unexpected error creating ZIP file: {str(e)}", level='ERROR')
+        return jsonify({"message": f"Error creating ZIP file: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
