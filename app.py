@@ -8,7 +8,6 @@ import base64, os, time, queue, shutil
 from threading import Event
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-
 from selenium.common.exceptions import TimeoutException
 import pytz
 from datetime import datetime, timedelta
