@@ -488,6 +488,8 @@
 
             const result = await response.json();
             status.textContent += '\n' + result.message;
+            // Show success popup
+            alert('Success: ' + result.message);
         } catch (error) {
             status.innerHTML += '\n<span class="error">Error creating ZIP: ' + error.message + '</span>';
         }
