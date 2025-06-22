@@ -404,12 +404,21 @@
 
       <label>Folder Name</label>
       <input type="text" id="folderName" required placeholder="Enter folder name (e.g., Nashik)">
-
-      <label>Start Index (Optional)</label>
+      <div class="input-row">
+        <div>
+          <label for="startIndex">Start Index <span style="font-weight:400;font-size:0.95em;">(optional)</span></label>
+          <input type="number" id="startIndex" placeholder="e.g. 1">
+        </div>
+        <div>
+          <label for="lastIndex">Last Index <span style="font-weight:400;font-size:0.95em;">(optional)</span></label>
+          <input type="number" id="lastIndex" placeholder="e.g. 100">
+        </div>
+      </div>
+      <!-- <label>Start Index (Optional)</label>
       <input type="number" id="startIndex" min="1">
 
       <label>Last Index (Optional)</label>
-      <input type="number" id="lastIndex" min="1">
+      <input type="number" id="lastIndex" min="1"> -->
 
       <div class="button-container">
         <button type="submit" id="startButton">Start Scraping</button>
