@@ -3,19 +3,31 @@ FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    CHROME_VERSION="google-chrome-stable" \
+    DISPLAY=:99
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     unzip \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    xvfb \
+    libgconf-2-4 \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libgbm1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chrome
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
     && apt-get update \
-    && apt-get install -y \
-    google-chrome-stable \
-    && apt-get clean \
+    && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
 # Create and set working directory
@@ -30,11 +42,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY . .
 
-# Create directory for PDF output
-RUN mkdir -p pdf_output && chmod 777 pdf_output
+# Create a downloads directory with proper permissions
+RUN mkdir -p downloads && chmod 777 downloads
 
 # Expose port
 EXPOSE 5000
 
-# Set the entrypoint
-CMD ["python", "app.py"] 
+# Start Xvfb and the Flask application
+CMD Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 & python app.py 
