@@ -335,6 +335,10 @@
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
     .download-all-btn {
       background: var(--button-gradient);
       color: #fff;
@@ -350,6 +354,24 @@
       background: var(--button-hover-gradient);
     }
     .download-all-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .clear-btn {
+      background: #f87171;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .clear-btn:hover {
+      background: #ef4444;
+    }
+    .clear-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
@@ -404,6 +426,7 @@
 
       <label>Folder Name</label>
       <input type="text" id="folderName" required placeholder="Enter folder name (e.g., Nashik)">
+      
       <div class="input-row">
         <div>
           <label for="startIndex">Start Index <span style="font-weight:400;font-size:0.95em;">(optional)</span></label>
@@ -434,7 +457,10 @@
     <h3>Downloaded Files</h3>
     <div class="file-actions">
       <span class="file-count" id="fileCount">0 files</span>
-      <button type="button" class="download-all-btn" id="downloadAllButton" onclick="downloadAllAsZip()">Download All as ZIP</button>
+      <div class="action-buttons">
+        <button type="button" class="download-all-btn" id="downloadAllButton" onclick="downloadAllAsZip()">Download All as ZIP</button>
+        <button type="button" class="clear-btn" id="clearFilesButton" onclick="clearAllFiles()">Clear All Files</button>
+      </div>
     </div>
     <div id="fileList">
       <p>No files yet. Start scraping or click "Refresh Files" to update.</p>
@@ -533,14 +559,29 @@
               }),
           });
 
-          const responseData = await response.json();
+          const files = await response.json();
           
           if (!response.ok) {
-              throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+              throw new Error(`HTTP error! status: ${response.status}`);
           }
 
-          // Refresh the file list after successful scraping
-          setTimeout(refreshFileList, 1000);
+          // Update the UI with the files
+          document.getElementById('output').innerHTML += 'Scraping completed successfully.\n';
+          
+          // Update file list with the returned files
+          updateFileListUI(files);
+          
+          // Enable the create ZIP button and disable the abort button
+          document.getElementById('createZipButton').disabled = false;
+          document.getElementById('abortButton').disabled = true;
+          
+          // Mark processing as complete
+          isProcessing = false;
+          
+          // Close the event source
+          if (eventSource) {
+              eventSource.close();
+          }
 
       } catch (error) {
           console.error('Error:', error);
@@ -559,16 +600,26 @@
         const response = await fetch('/abort', {
           method: 'POST'
         });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        const data = await response.json();
+        
         document.getElementById('output').innerHTML += 'Operation aborted.\n';
+        
+        // Update file list with files from the abort response
+        if (data.files && Array.isArray(data.files)) {
+          updateFileListUI(data.files);
+        } else {
+          // If no files in response, refresh the list anyway
+          setTimeout(refreshFileList, 500);
+        }
       } catch (error) {
         console.error('Error:', error);
         document.getElementById('output').innerHTML += `Error aborting: ${error.message}\n`;
+        // Still try to refresh the file list
+        setTimeout(refreshFileList, 500);
       } finally {
         isProcessing = false;
         document.getElementById('abortButton').disabled = true;
+        document.getElementById('createZipButton').disabled = false;
         if (eventSource) {
           eventSource.close();
         }
@@ -583,6 +634,10 @@
       }
 
       try {
+        // Disable button during processing
+        document.getElementById('createZipButton').disabled = true;
+        document.getElementById('output').innerHTML += 'Creating ZIP file...\n';
+        
         const response = await fetch('/create-zip', {
           method: 'POST',
           headers: {
@@ -593,15 +648,31 @@
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || `HTTP error! status: ${response.status}`);
         }
 
-        const result = await response.json();
-        document.getElementById('output').innerHTML += result.message + '\n';
+        document.getElementById('output').innerHTML += 'ZIP file created successfully.\n';
+        
+        // Update file list with the returned files
+        if (result.files) {
+          updateFileListUI(result.files);
+        }
+        
+        // Offer download link
+        if (result.zip_file) {
+          const zipUrl = `/downloads/${result.zip_file}`;
+          document.getElementById('output').innerHTML += `<a href="${zipUrl}" download>Download ${result.zip_file}</a>\n`;
+        }
+        
       } catch (error) {
         console.error('Error:', error);
         document.getElementById('output').innerHTML += `Error creating ZIP: ${error.message}\n`;
+      } finally {
+        // Re-enable button
+        document.getElementById('createZipButton').disabled = false;
       }
     }
 
@@ -611,30 +682,43 @@
       window.location.href = `/download_all_zip?filename=${encodeURIComponent(zipName)}`;
     }
 
+    async function clearAllFiles() {
+      if (!confirm('Are you sure you want to delete all files? This cannot be undone.')) {
+        return;
+      }
+      
+      try {
+        document.getElementById('clearFilesButton').disabled = true;
+        document.getElementById('output').innerHTML += 'Clearing all files...\n';
+        
+        const response = await fetch('/clear_downloads', {
+          method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          document.getElementById('output').innerHTML += `${result.message}\n`;
+          // Update the file list
+          refreshFileList();
+        } else {
+          throw new Error(result.message || 'Failed to clear files');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('output').innerHTML += `Error clearing files: ${error.message}\n`;
+      } finally {
+        document.getElementById('clearFilesButton').disabled = false;
+      }
+    }
+
     function refreshFileList() {
       fetch('/list_downloads')
         .then(response => response.json())
         .then(data => {
-          const fileList = document.getElementById('fileList');
-          const fileCount = document.getElementById('fileCount');
-          
-          if (data.files && data.files.length > 0) {
-            let html = '';
-            data.files.forEach(file => {
-              html += `<a href="/downloads/${file}" target="_blank" download>${file}</a>`;
-            });
-            fileList.innerHTML = html;
-            fileCount.textContent = `${data.files.length} files`;
-            
-            // Enable the download all button if there are files
-            document.getElementById('downloadAllButton').disabled = false;
-          } else {
-            fileList.innerHTML = '<p>No files found.</p>';
-            fileCount.textContent = '0 files';
-            
-            // Disable the download all button if there are no files
-            document.getElementById('downloadAllButton').disabled = true;
-          }
+          // Handle both array format and object format with files property
+          const files = Array.isArray(data) ? data : (data.files || []);
+          updateFileListUI(files);
         })
         .catch(error => {
           console.error('Error:', error);
@@ -643,9 +727,46 @@
           document.getElementById('downloadAllButton').disabled = true;
         });
     }
+    
+    // Helper function to update the file list UI
+    function updateFileListUI(files) {
+      const fileList = document.getElementById('fileList');
+      const fileCount = document.getElementById('fileCount');
+      
+      if (files && files.length > 0) {
+        let html = '';
+        files.forEach(file => {
+          html += `<a href="/downloads/${file}" target="_blank" download>${file}</a>`;
+        });
+        fileList.innerHTML = html;
+        fileCount.textContent = `${files.length} files`;
+        
+        // Enable the download all button if there are files
+        document.getElementById('downloadAllButton').disabled = false;
+        document.getElementById('createZipButton').disabled = false;
+      } else {
+        fileList.innerHTML = '<p>No files found.</p>';
+        fileCount.textContent = '0 files';
+        
+        // Disable the download all button if there are no files
+        document.getElementById('downloadAllButton').disabled = true;
+        document.getElementById('createZipButton').disabled = true;
+      }
+    }
 
     // Load file list on page load
     document.addEventListener('DOMContentLoaded', refreshFileList);
+    
+    // Add a refresh button for files
+    document.addEventListener('DOMContentLoaded', function() {
+      const fileActions = document.querySelector('.file-actions');
+      const refreshButton = document.createElement('button');
+      refreshButton.type = 'button';
+      refreshButton.className = 'download-all-btn';
+      refreshButton.textContent = 'Refresh Files';
+      refreshButton.onclick = refreshFileList;
+      fileActions.appendChild(refreshButton);
+    });
   </script>
 </body>
 </html>
