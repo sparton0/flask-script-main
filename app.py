@@ -15,13 +15,19 @@ from datetime import datetime, timedelta
 scraping_event = Event()
 log_queue = queue.Queue()
 driver = None
-app = Flask(__name__)
-SAVE_DIR = os.path.abspath("pdf_output")  # Default directory
+app = Flask(__name__, static_url_path='', static_folder='.')
+
+# Ensure the PDF output directory exists
+SAVE_DIR = os.path.abspath("pdf_output")
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
+
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    return send_from_directory('assets', filename)
 
 def get_chrome_options(save_location):
     options = Options()

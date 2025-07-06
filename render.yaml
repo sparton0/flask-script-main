@@ -19,15 +19,23 @@ services:
       
       # Install Python dependencies
       pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app
+    startCommand: gunicorn wsgi:app --workers 1 --timeout 120 --access-logfile - --error-logfile -
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: PYTHONUNBUFFERED
-        value: 1
+        value: "1"
       - key: PATH
         value: /usr/local/bin:${PATH}
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: wsgi.py
+      - key: GUNICORN_CMD_ARGS
+        value: "--timeout 120 --workers 1"
     disk:
       name: pdf-storage
       mountPath: /opt/render/project/src/pdf_output
-      sizeGB: 1 
+      sizeGB: 1
+    healthCheckPath: /
+    healthCheckTimeout: 120 
