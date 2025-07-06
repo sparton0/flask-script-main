@@ -145,6 +145,13 @@
       flex-direction: column;
       gap: 0.7rem;
     }
+    .button-row {
+      display: flex;
+      gap: 0.7rem;
+    }
+    .button-row button {
+      flex: 1;
+    }
     button[type="submit"] {
       background: var(--button-gradient);
       color: #fff;
@@ -178,6 +185,26 @@
       cursor: not-allowed;
     }
     #abortButton:not(:disabled):hover {
+      background: var(--abort-btn-border);
+      color: #fff;
+    }
+    #createZipButton {
+      background: var(--abort-btn-bg);
+      color: var(--abort-btn-text);
+      border: 2px solid var(--abort-btn-border);
+      padding: 12px 0;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      width: 100%;
+    }
+    #createZipButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #createZipButton:not(:disabled):hover {
       background: var(--abort-btn-border);
       color: #fff;
     }
@@ -228,6 +255,21 @@
     .log-success { color: #22c55e; font-weight: bold; }
     .log-warning { color: #eab308; font-weight: bold; }
     .log-info { color: #3b82f6; }
+    #submitDataButton {
+      background: var(--button-gradient);
+      color: #fff;
+      border: none;
+      padding: 12px 0;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    #submitDataButton:hover {
+      background: var(--button-hover-gradient);
+    }
     @media (max-width: 900px) {
       body {
         padding: 1rem;
@@ -244,6 +286,124 @@
         font-size: 1rem;
       }
     }
+    .download-location-container {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.1rem;
+    }
+    .download-location-container input {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    #browseButton {
+      background: var(--button-gradient);
+      color: #fff;
+      border: none;
+      padding: 0 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    #browseButton:hover {
+      background: var(--button-hover-gradient);
+    }
+    #output {
+      background: var(--log-bg);
+      color: var(--log-text);
+      padding: 1rem;
+      border-radius: 8px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 1.5rem;
+    }
+    #selectedPath {
+      margin-left: 10px;
+      color: #666;
+    }
+    .file-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .download-all-btn {
+      background: var(--button-gradient);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .download-all-btn:hover {
+      background: var(--button-hover-gradient);
+    }
+    .download-all-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .clear-btn {
+      background: #f87171;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .clear-btn:hover {
+      background: #ef4444;
+    }
+    .clear-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .file-count {
+      font-weight: bold;
+      color: var(--primary-text);
+    }
+    #fileList {
+      margin-top: 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 15px;
+      background-color: var(--card-bg);
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    #fileList a {
+      display: block;
+      padding: 8px 10px;
+      text-decoration: none;
+      color: var(--input-focus);
+      border-bottom: 1px solid var(--input-border);
+      transition: background-color 0.2s;
+    }
+    #fileList a:last-child {
+      border-bottom: none;
+    }
+    #fileList a:hover {
+      background-color: var(--input-bg);
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -257,16 +417,16 @@
       </span>
     </button>
     <h1>Document Scraper</h1>
-  <form id="scraperForm">
-      <label for="loginUrl">Login URL</label>
-      <input type="text" id="loginUrl" placeholder="https://..." required>
-    
-      <label for="tableUrls">Table URLs <span style="font-weight:400;font-size:0.95em;">(one per line)</span></label>
-      <textarea id="tableUrls" placeholder="Paste table URLs here, one per line" required></textarea>
+    <form id="scrapeForm" onsubmit="submitForm(event)">
+      <label>Login URL</label>
+      <input type="text" id="loginUrl" required>
 
-      <label for="folderName">District Name</label>
-      <input type="text" id="folderName" placeholder="e.g. Mumbai" required>
+      <label>Table URLs (one per line)</label>
+      <textarea id="urls" required></textarea>
 
+      <label>Folder Name</label>
+      <input type="text" id="folderName" required placeholder="Enter folder name (e.g., Nashik)">
+      
       <div class="input-row">
         <div>
           <label for="startIndex">Start Index <span style="font-weight:400;font-size:0.95em;">(optional)</span></label>
@@ -277,14 +437,34 @@
           <input type="number" id="lastIndex" placeholder="e.g. 100">
         </div>
       </div>
+      <!-- <label>Start Index (Optional)</label>
+      <input type="number" id="startIndex" min="1">
 
-    <div class="button-container">
-      <button type="submit">Start Scraping</button>
-        <button type="button" id="abortButton" disabled>Abort</button>
+      <label>Last Index (Optional)</label>
+      <input type="number" id="lastIndex" min="1"> -->
+
+      <div class="button-container">
+        <button type="submit" id="startButton">Start Scraping</button>
+        <div class="button-row">
+          <button type="button" id="abortButton" onclick="abortScraping()" disabled>Abort</button>
+          <button type="button" id="createZipButton" onclick="createZip()" disabled>Create ZIP</button>
+        </div>
+      </div>
+    </form>
+
+    <pre id="output">No logs yet. Start scraping to see real-time updates here.</pre>
+
+    <h3>Downloaded Files</h3>
+    <div class="file-actions">
+      <span class="file-count" id="fileCount">0 files</span>
+      <div class="action-buttons">
+        <button type="button" class="download-all-btn" id="downloadAllButton" onclick="downloadAllAsZip()">Download All as ZIP</button>
+        <button type="button" class="clear-btn" id="clearFilesButton" onclick="clearAllFiles()">Clear All Files</button>
+      </div>
     </div>
-  </form>
-
-    <div id="status">No logs yet. Start scraping to see real-time updates here.</div>
+    <div id="fileList">
+      <p>No files yet. Start scraping or click "Refresh Files" to update.</p>
+    </div>
   </div>
 
   <script>
@@ -311,108 +491,281 @@
       setDarkMode(!document.body.classList.contains('dark'));
     };
 
-    // Existing JS for form
-    let abortController = null;
-    const form = document.getElementById('scraperForm');
-    const status = document.getElementById('status');
-    const abortButton = document.getElementById('abortButton');
-    let eventSource = null;
+    let eventSource;
+    let isProcessing = false;
+    let currentFolderName = '';
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const loginUrl = document.getElementById('loginUrl').value;
-        const folderName = document.getElementById('folderName').value;
-        const startIndex = document.getElementById('startIndex').value;
-        const lastIndex = document.getElementById('lastIndex').value;
-        const tableUrls = document.getElementById('tableUrls').value
-            .split('\n')
-            .map(url => url.trim())
-            .filter(url => url);
+    async function submitForm(event) {
+      event.preventDefault();
+      if (isProcessing) return;
 
-        if (!loginUrl || tableUrls.length === 0 || !folderName) {
-            status.innerHTML = '<span class="error">Please fill in all fields</span>';
-            return;
-        }
+      const loginUrl = document.getElementById('loginUrl').value.trim();
+      const urls = document.getElementById('urls').value.split('\n')
+          .map(url => url.trim())
+          .filter(url => url);
+      const folderName = document.getElementById('folderName').value.trim();
+      const startIndex = document.getElementById('startIndex').value;
+      const lastIndex = document.getElementById('lastIndex').value;
 
-        // Clear previous status and enable abort button
-        status.textContent = 'Starting...';
-        abortButton.disabled = false;
-        
-        // Setup SSE for real-time logs (always enabled)
-        eventSource = new EventSource('/stream');
-        eventSource.onmessage = (event) => {
-            let msg = event.data;
-            let cls = '';
-            if (msg.startsWith('[ERROR]')) {
-                cls = 'log-error';
-                msg = msg.replace(/^\[ERROR\]\s*/, '');
-            } else if (msg.startsWith('[WARNING]')) {
-                cls = 'log-warning';
-                msg = msg.replace(/^\[WARNING\]\s*/, '');
-            }
-            
-            // Add the message with proper indentation
-            const span = cls ? `<span class='${cls}'>${msg}</span>` : msg;
-            if (status.innerHTML === 'No logs yet. Start scraping to see real-time updates here.') {
-                status.innerHTML = span;
-            } else {
-                status.innerHTML += '\n' + span;
-            }
-            status.scrollTop = status.scrollHeight;
-        };
+      if (!loginUrl || urls.length === 0 || !folderName) {
+          alert('Please fill in all required fields');
+          return;
+      }
 
-        try {
-            abortController = new AbortController();
-            const response = await fetch('/scrape', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    loginUrl, 
-                    urls: tableUrls,
-                    folderName,
-                    startIndex: startIndex ? parseInt(startIndex) : undefined,
-                    lastIndex: lastIndex ? parseInt(lastIndex) : undefined
-                }),
-                signal: abortController.signal
-            });
+      // Store the current folder name for downloading the ZIP
+      currentFolderName = folderName;
 
-            const data = await response.json();
-            status.textContent += '\n' + data.message;
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                status.textContent += '\nOperation aborted by user.';
-            } else {
-                status.innerHTML += '\n<span class="error">Error: ' + error.message + '</span>';
-            }
-        } finally {
-            abortButton.disabled = true;
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-            abortController = null;
-        }
-    });
+      isProcessing = true;
+      document.getElementById('abortButton').disabled = false;
+      document.getElementById('createZipButton').disabled = true;
+      document.getElementById('output').innerHTML = 'Starting...\n';
 
-    abortButton.addEventListener('click', async () => {
-      if (abortController) {
-        abortController.abort();
-        status.textContent += '\nAborting operation...';
-        
-        // Call the abort endpoint to close the browser
-        try {
-          const response = await fetch('/abort', {
-            method: 'POST'
+      // Set up event source for real-time updates BEFORE making the fetch request
+      if (eventSource) {
+          eventSource.close();
+      }
+
+      // Create and configure the EventSource
+      eventSource = new EventSource('/stream');
+      
+      eventSource.onmessage = function(event) {
+          if (event.data.trim()) {  // Only process non-empty messages
+              const output = document.getElementById('output');
+              output.innerHTML += event.data + '\n';
+              output.scrollTop = output.scrollHeight;
+          }
+      };
+
+      eventSource.onerror = function(error) {
+          console.error('EventSource error:', error);
+          eventSource.close();
+          isProcessing = false;
+          document.getElementById('abortButton').disabled = true;
+          document.getElementById('createZipButton').disabled = false;
+      };
+
+      try {
+          const response = await fetch('/scrape', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                  loginUrl: loginUrl,
+                  urls: urls,
+                  folderName: folderName,
+                  startIndex: startIndex || undefined,
+                  lastIndex: lastIndex || undefined
+              }),
           });
-          const data = await response.json();
-          status.textContent += '\n' + data.message;
-        } catch (error) {
-          status.innerHTML += '\n<span class="error">Error during abort: ' + error.message + '</span>';
+
+          const files = await response.json();
+          
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // Update the UI with the files
+          document.getElementById('output').innerHTML += 'Scraping completed successfully.\n';
+          
+          // Update file list with the returned files
+          updateFileListUI(files);
+          
+          // Enable the create ZIP button and disable the abort button
+          document.getElementById('createZipButton').disabled = false;
+          document.getElementById('abortButton').disabled = true;
+          
+          // Mark processing as complete
+          isProcessing = false;
+          
+          // Close the event source
+          if (eventSource) {
+              eventSource.close();
+          }
+
+      } catch (error) {
+          console.error('Error:', error);
+          document.getElementById('output').innerHTML += `Error: ${error.message}\n`;
+          isProcessing = false;
+          document.getElementById('abortButton').disabled = true;
+          document.getElementById('createZipButton').disabled = false;
+          if (eventSource) {
+              eventSource.close();
+          }
+      }
+    }
+
+    async function abortScraping() {
+      try {
+        const response = await fetch('/abort', {
+          method: 'POST'
+        });
+        const data = await response.json();
+        
+        document.getElementById('output').innerHTML += 'Operation aborted.\n';
+        
+        // Update file list with files from the abort response
+        if (data.files && Array.isArray(data.files)) {
+          updateFileListUI(data.files);
+        } else {
+          // If no files in response, refresh the list anyway
+          setTimeout(refreshFileList, 500);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('output').innerHTML += `Error aborting: ${error.message}\n`;
+        // Still try to refresh the file list
+        setTimeout(refreshFileList, 500);
+      } finally {
+        isProcessing = false;
+        document.getElementById('abortButton').disabled = true;
+        document.getElementById('createZipButton').disabled = false;
+        if (eventSource) {
+          eventSource.close();
         }
       }
+    }
+
+    async function createZip() {
+      const folderName = document.getElementById('folderName').value;
+      if (!folderName) {
+        alert('Please enter a folder name');
+        return;
+      }
+
+      try {
+        // Disable button during processing
+        document.getElementById('createZipButton').disabled = true;
+        document.getElementById('output').innerHTML += 'Creating ZIP file...\n';
+        
+        const response = await fetch('/create-zip', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            folderName: folderName
+          })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || `HTTP error! status: ${response.status}`);
+        }
+
+        document.getElementById('output').innerHTML += 'ZIP file created successfully.\n';
+        
+        // Update file list with the returned files
+        if (result.files) {
+          updateFileListUI(result.files);
+        }
+        
+        // Offer download link
+        if (result.zip_file) {
+          const zipUrl = `/downloads/${result.zip_file}`;
+          document.getElementById('output').innerHTML += `<a href="${zipUrl}" download>Download ${result.zip_file}</a>\n`;
+        }
+        
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('output').innerHTML += `Error creating ZIP: ${error.message}\n`;
+      } finally {
+        // Re-enable button
+        document.getElementById('createZipButton').disabled = false;
+      }
+    }
+
+    function downloadAllAsZip() {
+      // Use the folder name for the ZIP file
+      const zipName = currentFolderName || 'downloads';
+      window.location.href = `/download_all_zip?filename=${encodeURIComponent(zipName)}`;
+    }
+
+    async function clearAllFiles() {
+      if (!confirm('Are you sure you want to delete all files? This cannot be undone.')) {
+        return;
+      }
+      
+      try {
+        document.getElementById('clearFilesButton').disabled = true;
+        document.getElementById('output').innerHTML += 'Clearing all files...\n';
+        
+        const response = await fetch('/clear_downloads', {
+          method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          document.getElementById('output').innerHTML += `${result.message}\n`;
+          // Update the file list
+          refreshFileList();
+        } else {
+          throw new Error(result.message || 'Failed to clear files');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('output').innerHTML += `Error clearing files: ${error.message}\n`;
+      } finally {
+        document.getElementById('clearFilesButton').disabled = false;
+      }
+    }
+
+    function refreshFileList() {
+      fetch('/list_downloads')
+        .then(response => response.json())
+        .then(data => {
+          // Handle both array format and object format with files property
+          const files = Array.isArray(data) ? data : (data.files || []);
+          updateFileListUI(files);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('fileList').innerHTML = `<p class="error">Error loading files: ${error.message}</p>`;
+          document.getElementById('fileCount').textContent = '0 files';
+          document.getElementById('downloadAllButton').disabled = true;
+        });
+    }
+    
+    // Helper function to update the file list UI
+    function updateFileListUI(files) {
+      const fileList = document.getElementById('fileList');
+      const fileCount = document.getElementById('fileCount');
+      
+      if (files && files.length > 0) {
+        let html = '';
+        files.forEach(file => {
+          html += `<a href="/downloads/${file}" target="_blank" download>${file}</a>`;
+        });
+        fileList.innerHTML = html;
+        fileCount.textContent = `${files.length} files`;
+        
+        // Enable the download all button if there are files
+        document.getElementById('downloadAllButton').disabled = false;
+        document.getElementById('createZipButton').disabled = false;
+      } else {
+        fileList.innerHTML = '<p>No files found.</p>';
+        fileCount.textContent = '0 files';
+        
+        // Disable the download all button if there are no files
+        document.getElementById('downloadAllButton').disabled = true;
+        document.getElementById('createZipButton').disabled = true;
+      }
+    }
+
+    // Load file list on page load
+    document.addEventListener('DOMContentLoaded', refreshFileList);
+    
+    // Add a refresh button for files
+    document.addEventListener('DOMContentLoaded', function() {
+      const fileActions = document.querySelector('.file-actions');
+      const refreshButton = document.createElement('button');
+      refreshButton.type = 'button';
+      refreshButton.className = 'download-all-btn';
+      refreshButton.textContent = 'Refresh Files';
+      refreshButton.onclick = refreshFileList;
+      fileActions.appendChild(refreshButton);
     });
   </script>
 </body>
